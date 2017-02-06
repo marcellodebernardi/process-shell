@@ -51,29 +51,45 @@ function runCmd($fields) {
 
     $cmd = $fields[0];
 
-    // move contents of $fields[1 to n] into $args[0 to n-1]
+    // process arguments into more convenient form
     $cnt = 1;
     $args = array();
     while ($cnt < count($fields)) {
         $args[$cnt - 1] = $fields[$cnt];
         $cnt++;
     }
-
-    //  print("The command is $cmd \n") ;
-    //  print_r($args) ;
-
     $execname = addPath($cmd, $THEPATH);
 
-    // run the executable
+    // run executable
     if (!$execname) {
         echo("Executable file $cmd not found\n");
-    } else {
-        // execute the command
-        // print($execname) ;
-        $status = pcntl_exec($execname, $args);
-        // does not return on success
-        if (!$status) {
-            echo("Unable to run command $execname\n");
+    }
+    else {
+
+        $PID = pcntl_fork();
+
+        // fork failed
+        if ($PID == -1) {
+            echo("Fork failed. \n");
+        }
+        // in parent
+        else if ($PID) {
+            pcntl_signal(SIGINT, function($signo) {
+                // do nothing
+            });
+
+            pcntl_waitpid($PID, $status);
+            $exitCode = pcntl_wexitstatus($status);
+            // echo("Exit code: " . $exitCode . "\n");
+
+            pcntl_signal(SIGINT, SIG_DFL);
+        }
+        // in child
+        else {
+            $status = pcntl_exec($execname, $args);
+            if (!$status) {
+                echo("Unable to run command $execname\n");
+            }
         }
     }
 }
