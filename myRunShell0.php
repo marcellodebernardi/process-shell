@@ -15,6 +15,7 @@
 
 date_default_timezone_set('Europe/London');
 $THEPATH = array("/bin/", "/usr/bin/", "/usr/local/bin/", "./");
+
 declare(ticks = 1);
 
 $prompt = "R0Shell>";
@@ -65,7 +66,6 @@ function runCmd($fields) {
         echo("Executable file $cmd not found\n");
     }
     else {
-
         $PID = pcntl_fork();
 
         // fork failed
@@ -75,12 +75,13 @@ function runCmd($fields) {
         // in parent
         else if ($PID) {
             pcntl_signal(SIGINT, function($signo) {
-                // do nothing
+                global $PID;
+                posix_kill($PID, $signo);
             });
 
             pcntl_waitpid($PID, $status);
             $exitCode = pcntl_wexitstatus($status);
-            // echo("Exit code: " . $exitCode . "\n");
+            echo("Exit code: " . $exitCode . "\n");
 
             pcntl_signal(SIGINT, SIG_DFL);
         }
